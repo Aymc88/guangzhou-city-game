@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>广州城：2800年历史通关游戏</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Start Screen -->
+  <div id="start-screen">
+    <div class="title-container">
+      <p>2800 Years of Guangzhou History</p>
+      <h1 id="main-title">广州城：2800年历史通关</h1>
+      <p style="color:var(--primary-gold);font-size:0.95rem;margin-top:10px;">—— 穿越秦汉唐宋清民到现代，一城一史 ——</p>
+    </div>
+    <button class="start-btn" id="start-game-btn">
+      <span>开启历史旅程</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+    </button>
+    <div class="controls-guide">
+      <h3>【 游玩操作说明 】</h3>
+      <div class="keys-container">
+        <span class="key-tag">↑ ↓ ← → 移动</span>
+        <span class="key-tag">SPACE 跳跃</span>
+      </div>
+      <p class="controls-text">
+        <strong>第一关</strong>：走向地图中心的番禺城，触碰城门<br>
+        <strong>第二关</strong>：触碰码头上的陶瓷、丝绸、茶叶货物<br>
+        <strong>第三关</strong>：探索十三行商行，前往黄埔军校<br>
+        <strong>第四关</strong>：走向广州塔（小蛮腰）完成通关！
+      </p>
+    </div>
+  </div>
+
+  <!-- Game Container -->
+  <div id="game-container" style="display:none;">
+    <canvas id="game-canvas"></canvas>
+
+    <button id="audio-toggle" title="开关音效">
+      <svg id="sound-on-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+    </button>
+
+    <!-- HUD: Level Panel -->
+    <section class="hud-panel" id="objective-panel">
+      <div class="level-tag" id="hud-level-number">第一关</div>
+      <h2 class="level-title" id="hud-level-name">任嚣筑城 · 番禺立都</h2>
+      <ul class="objective-list" id="objective-list-container"></ul>
+    </section>
+
+    <!-- HUD: Collection Panel (5 cards) -->
+    <section class="hud-panel" id="collection-panel">
+      <h3>广州历史图册</h3>
+      <div class="collection-grid" id="collection-grid-container">
+        <div class="collection-slot" id="slot-0" title="任嚣筑城图"><span class="lock-icon">🔒</span><img src="assets/renxiao.png" alt="任嚣筑城图"></div>
+        <div class="collection-slot" id="slot-1" title="海丝起点图"><span class="lock-icon">🔒</span><img src="assets/maritime.png" alt="海丝起点图"></div>
+        <div class="collection-slot" id="slot-2" title="十三行图"><span class="lock-icon">🔒</span><img src="assets/thirteen.png" alt="十三行图"></div>
+        <div class="collection-slot" id="slot-3" title="黄埔军校图"><span class="lock-icon">🔒</span><img src="assets/whampoa.png" alt="黄埔军校图"></div>
+        <div class="collection-slot" id="slot-4" title="小蛮腰图"><span class="lock-icon">🔒</span><img src="assets/cantontower.png" alt="小蛮腰图"></div>
+      </div>
+    </section>
+
+    <!-- Floating tip -->
+    <div id="floating-tips"><span id="tips-text">正在载入广州城地图...</span></div>
+  </div>
+
+  <!-- History Card Modal -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="modal-img-container">
+          <img id="modal-card-img" src="assets/renxiao.png" alt="">
+        </div>
+        <div class="modal-info-container">
+          <div class="modal-title-sec">
+            <div class="modal-subtitle" id="modal-card-period">秦朝时期</div>
+            <h2 class="modal-title" id="modal-card-title">任嚣筑城图</h2>
+          </div>
+          <p class="modal-text" id="modal-card-desc"></p>
+          <div style="padding:0;border:none;background:transparent;margin-top:20px;">
+            <button class="modal-btn" id="modal-close-btn">我知道了，继续探索</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="victory-screen">
+    <div class="victory-card">
+      <div class="victory-badge">🏆</div>
+      <h2 class="victory-title">恭喜通关！</h2>
+      <p class="victory-text">
+        您操纵黄色小人，穿越了秦朝番禺筑城、唐宋海上丝绸之路、清朝十三行与黄埔军校，直至现代广州塔小蛮腰。<br><br>
+        历经<strong>2800年</strong>广州历史长河，见证了这座千年商都的沧桑巨变与今日繁华！
+      </p>
+      <button class="victory-btn" id="replay-btn">重温历史旅程</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
