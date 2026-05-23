@@ -24,6 +24,8 @@ body {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 /* Scrollbars */
@@ -668,5 +670,69 @@ body {
   }
   .title-container h1 {
     font-size: 2.5rem;
+  }
+}
+
+/* ==========================================================================
+   Mobile Virtual D-Pad
+   ========================================================================== */
+.mobile-only {
+  display: none; /* Hidden by default */
+}
+
+@media (max-width: 1024px) and (orientation: landscape), (hover: none) {
+  .mobile-only {
+    display: flex;
+  }
+  
+  #virtual-dpad {
+    position: absolute;
+    bottom: max(30px, env(safe-area-inset-bottom));
+    left: max(30px, env(safe-area-inset-left));
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+  }
+
+  .dpad-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .dpad-btn {
+    width: 65px;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 14px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  
+  .dpad-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Add invisible triangles for arrow shapes using pseudo-elements */
+  #btn-up::after { content: ''; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 15px solid rgba(255, 255, 255, 0.6); }
+  #btn-down::after { content: ''; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 15px solid rgba(255, 255, 255, 0.6); }
+  #btn-left::after { content: ''; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-right: 15px solid rgba(255, 255, 255, 0.6); }
+  #btn-right::after { content: ''; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 15px solid rgba(255, 255, 255, 0.6); }
+
+  /* Make sure HUD panels don't overlap D-pad on mobile */
+  #collection-panel {
+    bottom: max(30px, env(safe-area-inset-bottom));
+    right: max(30px, env(safe-area-inset-right));
+    left: auto;
   }
 }

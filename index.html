@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>广州城：2800年历史通关游戏</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -69,6 +71,18 @@
 
     <!-- Floating tip -->
     <div id="floating-tips"><span id="tips-text">正在载入广州城地图...</span></div>
+
+    <!-- Virtual D-Pad for Mobile -->
+    <div id="virtual-dpad" class="mobile-only">
+      <div class="dpad-row">
+        <button id="btn-up" class="dpad-btn"></button>
+      </div>
+      <div class="dpad-row">
+        <button id="btn-left" class="dpad-btn"></button>
+        <button id="btn-down" class="dpad-btn"></button>
+        <button id="btn-right" class="dpad-btn"></button>
+      </div>
+    </div>
   </div>
 
   <!-- History Card Modal -->

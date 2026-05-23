@@ -13,14 +13,16 @@ let currentLevel = 1;
 let rafId = null;
 let lastTs = 0;
 
+const BG_IMAGES = {};
+
 // Camera: screen coords of iso-origin tile(0,0)
 const cam = { sx: 0, sy: 0 };
 
 // ═══════════════════════════════════════════════════════
 //  Isometric constants & helpers
 // ═══════════════════════════════════════════════════════
-const TW = 64;   // tile diamond width  (px)
-const TH = 32;   // tile diamond height (px)
+const TW = 44;   // tile diamond width  (px)
+const TH = 22;   // tile diamond height (px)
 
 /** World tile → screen pixel */
 function t2s(tx, ty) {
@@ -34,15 +36,15 @@ function t2s(tx, ty) {
 //  Palette
 // ═══════════════════════════════════════════════════════
 const COL = {
-  grass:  { t:'#5a9a30', r:'#3a6a18', l:'#2a5010' },
-  stone:  { t:'#8a8070', r:'#5a5048', l:'#3a3028' },
-  water:  { t:'#2878c0', r:'#185090', l:'#0a3870' },
-  sand:   { t:'#d0b460', r:'#a08840', l:'#786020' },
-  wood:   { t:'#b07838', r:'#805820', l:'#604010' },
-  road:   { t:'#8a7860', r:'#5a4840', l:'#3a2820' },
-  city:   { t:'#c8b880', r:'#988858', l:'#786840' },
-  modern: { t:'#607080', r:'#405060', l:'#283040' },
-  dirt:   { t:'#b07848', r:'#886030', l:'#603820' },
+  grass:  { t:'#b5c59f', r:'#9eb085', l:'#92a378' },
+  stone:  { t:'#d8d9d4', r:'#bdbdb9', l:'#b0b0ad' },
+  water:  { t:'#8cbdb0', r:'#78a69a', l:'#678f84' },
+  sand:   { t:'#e8dbcc', r:'#d4c6b6', l:'#c7b8a7' },
+  wood:   { t:'#b89073', r:'#9e795d', l:'#8a684e' },
+  road:   { t:'#d1c4b2', r:'#bcaf9d', l:'#aba08e' },
+  city:   { t:'#e8dbcc', r:'#d4c6b6', l:'#c7b8a7' },
+  modern: { t:'#a0aab0', r:'#859199', l:'#727d85' },
+  dirt:   { t:'#d6bf9e', r:'#c2aa88', l:'#b39b79' },
 };
 
 // ═══════════════════════════════════════════════════════
@@ -124,7 +126,7 @@ function getObjects(lv) {
   switch (lv) {
     case 1:
       return [
-        { id:'gate',     tx:12, ty:15.5, r:2,   cardId:0, nextLv:true,  label:'城门' },
+        { id:'gate',     tx:22, ty:22, r:2.5,   cardId:0, nextLv:true,  label:'城门' },
       ];
     case 2:
       return [
@@ -147,10 +149,10 @@ function getObjects(lv) {
 
 // Level start positions & HUD strings
 const LEVEL_INFO = {
-  1: { tx:12, ty:21, tag:'第一关', name:'任嚣筑城 · 番禺立都',    tip:'走向城门，触碰进入番禺城！',         sky0:'#2a200a', sky1:'#0a0a14' },
-  2: { tx:12, ty:22, tag:'第二关', name:'唐宋·海上丝绸之路',      tip:'触碰码头上的货物，了解贸易！',       sky0:'#0a1a2a', sky1:'#050a18' },
-  3: { tx:12, ty:22, tag:'第三关', name:'清朝民国·十三行黄埔',    tip:'探索十三行，找到黄埔军校进入第四关！', sky0:'#1a1218', sky1:'#080610' },
-  4: { tx:12, ty:20, tag:'第四关', name:'现代广州·小蛮腰',        tip:'走向广州塔，触碰完成历史旅程！',      sky0:'#050a18', sky1:'#020406' },
+  1: { tx:25, ty:25, tag:'第一关', name:'任嚣筑城 · 番禺立都',    tip:'走向城门，触碰进入番禺城！',         sky0:'#e8e4d8', sky1:'#d1c4b2' },
+  2: { tx:16.8, ty:18.2, tag:'第二关', name:'唐宋·海上丝绸之路',      tip:'触碰码头上的货物，了解贸易！',       sky0:'#d8e0d4', sky1:'#b5c59f' },
+  3: { tx:16.5, ty:23.5, tag:'第三关', name:'清朝民国·十三行黄埔',    tip:'探索十三行，找到黄埔军校进入第四关！', sky0:'#d1c4b2', sky1:'#b89073' },
+  4: { tx:15.6, ty:17.9, tag:'第四关', name:'现代广州·小蛮腰',        tip:'走向广州塔，触碰完成历史旅程！',      sky0:'#b0c4de', sky1:'#8da6c0' },
 };
 
 // ═══════════════════════════════════════════════════════
@@ -199,6 +201,19 @@ function init() {
   resize();
   window.addEventListener('resize', resize);
 
+  // Preload generated backgrounds
+  const srcs = {
+    1: 'assets/level1_bg.png',
+    2: 'assets/level2_bg.png',
+    3: 'assets/level3_bg.png',
+    4: 'assets/level4_bg.png'
+  };
+  for (let i = 1; i <= 4; i++) {
+    const img = new Image();
+    img.src = srcs[i];
+    BG_IMAGES[i] = img;
+  }
+
   document.addEventListener('keydown', e => {
     K[e.code] = true;
     if (e.code === 'Space') { e.preventDefault(); doJump(); }
@@ -213,6 +228,25 @@ function init() {
     if (!audioCtx) return;
     audioCtx.state === 'suspended' ? audioCtx.resume() : audioCtx.suspend();
   });
+
+  // Mobile D-Pad Touch Controls
+  const setupBtn = (id, key) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const press = (e) => { e.preventDefault(); K[key] = true; initAudio(); };
+    const release = (e) => { e.preventDefault(); K[key] = false; };
+    btn.addEventListener('touchstart', press, {passive: false});
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('touchend', release);
+    btn.addEventListener('touchcancel', release);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  };
+  
+  setupBtn('btn-up', 'ArrowUp');
+  setupBtn('btn-down', 'ArrowDown');
+  setupBtn('btn-left', 'ArrowLeft');
+  setupBtn('btn-right', 'ArrowRight');
 }
 
 function resize() {
@@ -378,11 +412,24 @@ function update(dt) {
 
   P.moving = dx !== 0 || dy !== 0;
   if (P.moving) {
-    P.tx += dx * P.speed * dt / 16;
-    P.ty += dy * P.speed * dt / 16;
+    let nextTx = P.tx + dx * P.speed * dt / 16;
+    let nextTy = P.ty + dy * P.speed * dt / 16;
+    
+    // Default bounds
+    nextTx = Math.max(0.5, Math.min(23.5, nextTx));
+    nextTy = Math.max(0.5, Math.min(23.5, nextTy));
+
+    // Custom level boundaries
+    let allowed = true;
+    if (currentLevel === 1) {
+      // Road is mathematically along the vertical center line tx == ty
+      if (nextTy < 21 || nextTy > 26 || nextTx < 21 || nextTx > 26 || Math.abs(nextTx - nextTy) > 2.0) allowed = false;
+    }
+    if (allowed) {
+      P.tx = nextTx;
+      P.ty = nextTy;
+    }
     P.walkPhase += dt * 0.006;
-    P.tx = Math.max(0.5, Math.min(23.5, P.tx));
-    P.ty = Math.max(0.5, Math.min(23.5, P.ty));
   }
 
   // Jump physics
@@ -419,21 +466,41 @@ function update(dt) {
 //  Drawing helpers
 // ═══════════════════════════════════════════════════════
 
+function pseudoRandom(tx, ty) {
+  return Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453 % 1;
+}
+
 /** Draw flat diamond tile */
 function drawTile(tx, ty, topColor) {
   const { x, y } = t2s(tx, ty);
   const hw = TW / 2, hh = TH / 2;
   ctx.beginPath();
-  ctx.moveTo(x,      y - hh);
-  ctx.lineTo(x + hw, y);
-  ctx.lineTo(x,      y + hh);
-  ctx.lineTo(x - hw, y);
+  ctx.moveTo(x,      y - hh + 1);
+  ctx.lineTo(x + hw + 1, y);
+  ctx.lineTo(x,      y + hh + 1);
+  ctx.lineTo(x - hw - 1, y);
   ctx.closePath();
   ctx.fillStyle = topColor;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.07)';
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
+  
+  const rnd = Math.abs(pseudoRandom(tx, ty));
+  if (topColor === COL.grass.t) {
+    if (rnd > 0.6) {
+      ctx.strokeStyle = '#859c73'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 3, y - 4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 2, y - 3); ctx.stroke();
+    }
+  } else if (topColor === COL.water.t) {
+    if (rnd > 0.5) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y + 2); ctx.stroke();
+    }
+  } else if (topColor === COL.dirt.t || topColor === COL.sand.t) {
+    if (rnd > 0.7) {
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+    }
+  }
 }
 
 /**
@@ -441,11 +508,33 @@ function drawTile(tx, ty, topColor) {
  * tw = x-axis tiles wide, td = y-axis tiles deep, bh = height px
  * c = { top, right, left }
  */
-function drawBox(tx, ty, tw, td, bh, c) {
+function drawBox(tx, ty, tw, td, bh, c, type = 'box') {
   const ox = (tx - ty) * TW / 2 + cam.sx;
   const oy = (tx + ty) * TH / 2 + cam.sy;
   const rx = tw * TW / 2, ry = tw * TH / 2;
   const lx = -td * TW / 2, ly = td * TH / 2;
+
+  if (type === 'building') {
+    ctx.fillStyle = '#fdfbf7'; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + rx, oy + ry); ctx.lineTo(ox + rx, oy + ry - bh); ctx.lineTo(ox, oy - bh); ctx.fill();
+    ctx.fillStyle = '#f0eee9'; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + lx, oy + ly); ctx.lineTo(ox + lx, oy + ly - bh); ctx.lineTo(ox, oy - bh); ctx.fill();
+    
+    ctx.strokeStyle = '#6a4b35'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy - bh); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox + rx, oy + ry); ctx.lineTo(ox + rx, oy + ry - bh); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox + lx, oy + ly); ctx.lineTo(ox + lx, oy + ly - bh); ctx.stroke();
+
+    const rL = c.left || '#35443e';
+    const rR = c.right || '#51655d';
+    const ex = 6, ey = 8, rh = 22;
+    const hx = ox + rx/2 + lx/2, hy = oy + ry/2 + ly/2 - bh - rh;
+    
+    ctx.beginPath(); ctx.moveTo(ox, oy - bh + ey); ctx.lineTo(ox + rx + ex, oy + ry - bh + ey); ctx.lineTo(hx, hy); ctx.closePath();
+    ctx.fillStyle = rR; ctx.fill(); ctx.strokeStyle = '#222'; ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(ox, oy - bh + ey); ctx.lineTo(ox + lx - ex, oy + ly - bh + ey); ctx.lineTo(hx, hy); ctx.closePath();
+    ctx.fillStyle = rL; ctx.fill(); ctx.stroke();
+    return;
+  }
 
   // Right face
   ctx.beginPath();
@@ -456,7 +545,7 @@ function drawBox(tx, ty, tw, td, bh, c) {
   ctx.closePath();
   ctx.fillStyle = c.right || '#888';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+  if (type !== 'modern') { ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.5; ctx.stroke(); }
 
   // Left face
   ctx.beginPath();
@@ -467,7 +556,7 @@ function drawBox(tx, ty, tw, td, bh, c) {
   ctx.closePath();
   ctx.fillStyle = c.left || '#aaa';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.stroke();
+  if (type !== 'modern') ctx.stroke();
 
   // Top face
   ctx.beginPath();
@@ -478,7 +567,15 @@ function drawBox(tx, ty, tw, td, bh, c) {
   ctx.closePath();
   ctx.fillStyle = c.top || '#ccc';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.stroke();
+  if (type !== 'modern') ctx.stroke();
+  
+  if (type === 'wall') {
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    for(let i=1; i<bh/8; i++) {
+       ctx.beginPath(); ctx.moveTo(ox, oy - i*8); ctx.lineTo(ox+rx, oy+ry - i*8); ctx.stroke();
+       ctx.beginPath(); ctx.moveTo(ox, oy - i*8); ctx.lineTo(ox+lx, oy+ly - i*8); ctx.stroke();
+    }
+  }
 }
 
 /** Draw text label floating above a tile */
@@ -515,12 +612,20 @@ function drawGlow(tx, ty, r) {
 function drawTree(tx, ty) {
   const { x, y } = t2s(tx, ty);
   ctx.save();
-  ctx.fillStyle = '#5a3010';
-  ctx.fillRect(x - 3, y - 26, 6, 16);
-  ctx.fillStyle = '#2a7010';
-  ctx.beginPath(); ctx.moveTo(x, y - 58); ctx.lineTo(x + 14, y - 26); ctx.lineTo(x - 14, y - 26); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#389018';
-  ctx.beginPath(); ctx.moveTo(x, y - 68); ctx.lineTo(x + 11, y - 42); ctx.lineTo(x - 11, y - 42); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6e5a49';
+  ctx.fillRect(x - 2, y - 20, 4, 16);
+  ctx.fillStyle = '#7a9e71';
+  ctx.beginPath();
+  ctx.arc(x, y - 28, 12, 0, Math.PI * 2);
+  ctx.arc(x - 8, y - 22, 10, 0, Math.PI * 2);
+  ctx.arc(x + 8, y - 22, 10, 0, Math.PI * 2);
+  ctx.arc(x, y - 38, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#92b589';
+  ctx.beginPath();
+  ctx.arc(x - 3, y - 30, 8, 0, Math.PI * 2);
+  ctx.arc(x + 5, y - 26, 6, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -661,12 +766,13 @@ function drawPlayer() {
   ctx.save();
   ctx.globalAlpha = Math.max(0.05, 0.28 + P.jumpH / 80);
   ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(x, y, 13, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y, 13 * 1.3, 6 * 1.3, 0, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
   const wa = P.moving ? Math.sin(P.walkPhase) * 0.45 : 0;
   ctx.save();
   ctx.translate(x, py);
+  ctx.scale(1.3, 1.3); // Scale up player relative to background
 
   // Body
   ctx.fillStyle = '#FFD700'; ctx.strokeStyle = '#B8960A'; ctx.lineWidth = 1.5;
@@ -700,49 +806,14 @@ function drawPlayer() {
   ctx.restore();
 }
 
+
+
 // ═══════════════════════════════════════════════════════
 //  Level 1 – 秦朝番禺
 // ═══════════════════════════════════════════════════════
 function drawLevel1() {
-  const S = 25;
-  // Ground
-  for (let r = 0; r < S; r++) {
-    for (let c = 0; c < S; c++) {
-      let col = COL.grass.t;
-      if (r >= 15 && r <= 17 && c >= 9 && c <= 15) col = COL.stone.t;   // path
-      if (r >= 6  && r <= 14 && c >= 7  && c <= 17) col = COL.city.t;   // city interior
-      drawTile(c, r, col);
-    }
-  }
-
-  // Outer walls — top
-  for (let c = 7; c <= 17; c++) drawBox(c, 5, 1, 1, 32, { top:'#b0a070', right:'#706030', left:'#504020' });
-  // Bottom wall (gate gap at c=11-13)
-  for (let c = 7; c <= 17; c++) {
-    if (c < 11 || c > 13) drawBox(c, 15, 1, 1, 32, { top:'#b0a070', right:'#706030', left:'#504020' });
-  }
-  // Side walls
-  for (let r = 5; r <= 15; r++) {
-    drawBox(7,  r, 1, 1, 32, { top:'#b0a070', right:'#706030', left:'#504020' });
-    drawBox(17, r, 1, 1, 32, { top:'#b0a070', right:'#706030', left:'#504020' });
-  }
-
-  // Gate towers
-  drawBox(10, 14.5, 1, 1.5, 52, { top:'#d0b878', right:'#907038', left:'#705020' });
-  drawBox(13, 14.5, 1, 1.5, 52, { top:'#d0b878', right:'#907038', left:'#705020' });
-
-  // Inner buildings
-  drawBox(9,  7, 2, 2, 38, { top:'#d8c880', right:'#a09050', left:'#806830' });
-  drawBox(13, 7, 2, 2, 38, { top:'#d8c880', right:'#a09050', left:'#806830' });
-  drawBox(10, 11, 2, 2, 28, { top:'#c8b870', right:'#988848', left:'#786828' });
-
-  // Trees
-  [[3,3],[21,3],[3,20],[21,20],[5,12],[19,10],[2,17],[22,8]].forEach(([tx,ty])=>drawTree(tx,ty));
-
-  // Glow on gate
-  drawGlow(12, 15.5, 2.2);
-  floatLabel(12, 14, '城 门', 56, '#FFD700', 15);
-
+  drawGlow(22, 22, 2.5); // 入城投影 (Gate entrance)
+  floatLabel(22, 22, '番禺城', 140, '#FFD700', 36); // 城门上的牌匾 (Gate plaque)
   drawBanner('秦朝 · 公元前214年', '任嚣筑城 · 番禺立都');
 }
 
@@ -750,48 +821,9 @@ function drawLevel1() {
 //  Level 2 – 唐宋海上丝绸之路
 // ═══════════════════════════════════════════════════════
 function drawLevel2() {
-  const S = 25;
-  // Ground
-  for (let r = 0; r < S; r++) {
-    for (let c = 0; c < S; c++) {
-      let col;
-      if (c < 4 || c > 20 || r < 3) col = COL.water.t;
-      else if (r < 7)                col = COL.sand.t;
-      else                           col = COL.wood.t;
-      drawTile(c, r, col);
-    }
-  }
-
-  // Dock planks
-  for (let r = 3; r <= 6; r++) {
-    for (let c = 4; c <= 20; c++) {
-      drawBox(c, r, 1, 1, 4, { top:'#7a5528', right:'#4a3210', left:'#2a1800' });
-    }
-  }
-
-  // Ships
-  drawShip(3.5,  4, '#7a3808');
-  drawShip(11.5, 2.5, '#5a3210');
-  drawShip(18,   4.5, '#7a4510');
-
-  // City buildings background
-  for (let i = 0; i < 5; i++) {
-    drawBox(5 + i * 3, 9, 2, 2, 30, { top:'#c8b880', right:'#988858', left:'#786840' });
-  }
-
-  // Cargo piles + glows
-  drawGlow(7, 12, 2);  drawCargo('tri', 7, 12, '陶瓷');
-  drawGlow(12, 10, 2); drawCargo('sq', 12, 10, '丝绸');
-  drawGlow(17, 12, 2); drawCargo('cir', 17, 12, '茶叶');
-
-  // Faint shimmer on water
-  ctx.save();
-  ctx.globalAlpha = 0.12 + Math.sin(Date.now() * 0.002) * 0.05;
-  ctx.fillStyle = '#aaddff';
-  ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = 1;
-  ctx.restore();
-
+  drawGlow(7, 12, 2);  floatLabel(7, 12, '陶瓷', 40, '#FFD700', 42);
+  drawGlow(12, 10, 2); floatLabel(12, 10, '丝绸', 40, '#FFD700', 42);
+  drawGlow(17, 12, 2); floatLabel(17, 12, '茶叶', 40, '#FFD700', 42);
   drawBanner('唐宋时期 · 海上丝绸之路', '海上贸易 · 四海繁华');
 }
 
@@ -799,56 +831,9 @@ function drawLevel2() {
 //  Level 3 – 清朝民国·十三行·黄埔
 // ═══════════════════════════════════════════════════════
 function drawLevel3() {
-  const S = 25;
-  // Ground
-  for (let r = 0; r < S; r++) {
-    for (let c = 0; c < S; c++) {
-      let col;
-      if (r >= 20 && r <= 23)          col = COL.water.t;
-      else if (c % 5 === 0 || r % 5 === 0) col = COL.road.t;
-      else                               col = COL.dirt.t;
-      drawTile(c, r, col);
-    }
-  }
+  floatLabel(9, 7, '十三行商行', 50, '#FFE080', 42);
+  floatLabel(18, 12, '黄埔军校', 52, '#FFE080', 45);
 
-  // 十三行 row houses — 6 connected buildings
-  const shColors = [
-    { top:'#d8a870', right:'#9a6840', left:'#784820' },
-    { top:'#c89858', right:'#886030', left:'#684018' },
-  ];
-  for (let i = 0; i < 6; i++) {
-    drawBox(4 + i * 2, 7, 2, 2, 44, shColors[i % 2]);
-    // Window cutout
-    const {x, y} = t2s(5 + i * 2, 8);
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,220,120,0.3)';
-    ctx.beginPath(); ctx.rect(x - 5, y - 36, 10, 12); ctx.fill();
-    ctx.restore();
-  }
-  floatLabel(9, 7, '十三行商行', 50, '#FFE080', 14);
-
-  // Wu mansion (伍秉鉴)
-  drawBox(5, 12, 4, 3, 52, { top:'#e0c878', right:'#a88040', left:'#806020' });
-  drawBox(6, 11, 2, 1, 22, { top:'#c8a850', right:'#907030', left:'#685010' }); // roof ornament
-  floatLabel(7, 12, '伍氏大宅', 58, '#FFD700', 13);
-
-  // Whampoa Military Academy
-  drawBox(15, 11, 6, 5, 46, { top:'#7a8a78', right:'#4a5848', left:'#283828' });
-  drawBox(17, 10, 2, 1, 22, { top:'#6a7860', right:'#3a4840', left:'#182820' }); // gatehouse
-  // Flag pole
-  const { x: fx, y: fy } = t2s(18, 11);
-  ctx.save();
-  ctx.strokeStyle = '#8a9878'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(fx, fy - 46); ctx.lineTo(fx, fy - 80); ctx.stroke();
-  ctx.fillStyle = '#d83020';
-  ctx.beginPath(); ctx.rect(fx, fy - 80, 18, 12); ctx.fill();
-  ctx.restore();
-  floatLabel(18, 12, '黄埔军校', 52, '#FFE080', 15);
-
-  // Trees
-  [[2,3],[23,3],[2,18],[23,16]].forEach(([tx,ty])=>drawTree(tx,ty));
-
-  // Glows
   if (!triggered.has('shisanhang')) drawGlow(9, 9, 3);
   drawGlow(18, 14, 2.5);
 
@@ -859,48 +844,8 @@ function drawLevel3() {
 //  Level 4 – 现代广州·小蛮腰
 // ═══════════════════════════════════════════════════════
 function drawLevel4() {
-  const S = 25;
-  // Ground
-  for (let r = 0; r < S; r++) {
-    for (let c = 0; c < S; c++) {
-      let col;
-      if (r >= 9 && r <= 12)   col = COL.water.t;   // Pearl River
-      else if (r < 3 || r > 21) col = COL.modern.t;
-      else                       col = COL.modern.t;
-      drawTile(c, r, col);
-    }
-  }
-
-  // North bank — CBD towers
-  const northTowers = [[1,1,2,2,75],[5,1,2,2,90],[9,1,2,2,65],[13,1,2,2,100],[17,1,2,2,80],[21,1,2,2,70]];
-  for (const [tx,ty,tw,td,bh] of northTowers) {
-    drawBox(tx,ty,tw,td,bh, { top:'#7090a0', right:'#405870', left:'#283848' });
-    // Lit windows
-    const {x,y} = t2s(tx+tw/2, ty+td/2);
-    ctx.save(); ctx.globalAlpha = 0.25 + Math.sin(Date.now()*0.001 + tx)*0.1;
-    ctx.fillStyle = '#aaddff';
-    ctx.beginPath(); ctx.rect(x-6, y-bh+8, 12, bh-12); ctx.fill();
-    ctx.restore();
-  }
-
-  // South bank buildings
-  const southTowers = [[1,14,2,2,60],[5,14,2,2,55],[9,14,2,2,70],[17,14,2,2,65],[21,14,2,2,58]];
-  for (const [tx,ty,tw,td,bh] of southTowers) {
-    drawBox(tx,ty,tw,td,bh, { top:'#607888', right:'#384858', left:'#182838' });
-  }
-
-  // Pearl River shimmer
-  ctx.save();
-  ctx.globalAlpha = 0.18 + Math.sin(Date.now() * 0.0015) * 0.06;
-  ctx.fillStyle = '#88ccff';
-  ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = 1;
-  ctx.restore();
-
-  // Canton Tower
-  drawCantonTower(12, 10);
   drawGlow(12, 10, 3);
-
+  floatLabel(12, 10, '广州塔 · 小蛮腰', 80, '#FFD700', 45);
   drawBanner('现代广州 · 新世纪新地标', '广州塔 · 小蛮腰');
 }
 
@@ -910,25 +855,20 @@ function drawLevel4() {
 function render() {
   ctx.clearRect(0, 0, W, H);
 
-  // Sky gradient
-  const info = LEVEL_INFO[currentLevel];
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, info.sky0);
-  sky.addColorStop(1, info.sky1 || '#050510');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H);
-
-  // Stars (levels 2-4)
-  if (currentLevel >= 2) {
-    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    for (let i = 0; i < 40; i++) {
-      const sx = (i * 137.5) % W;
-      const sy = ((i * 97 + 30) % (H * 0.4));
-      const alpha = 0.3 + Math.sin(Date.now() * 0.001 + i) * 0.2;
-      ctx.globalAlpha = alpha;
-      ctx.beginPath(); ctx.arc(sx, sy, 1, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
+  // Background Image
+  if (BG_IMAGES[currentLevel] && BG_IMAGES[currentLevel].complete) {
+    const center = t2s(12.5, 12.5);
+    const imgW = 1500;
+    const imgH = 1500;
+    ctx.drawImage(BG_IMAGES[currentLevel], center.x - imgW/2, center.y - imgH/2 - 100, imgW, imgH);
+  } else {
+    // Sky gradient fallback
+    const info = LEVEL_INFO[currentLevel];
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, info.sky0);
+    sky.addColorStop(1, info.sky1 || '#050510');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
   }
 
   // Level scene
