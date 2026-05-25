@@ -608,13 +608,14 @@ body {
 /* Credit signature - bottom right on all pages */
 #credit-signature {
   position: fixed;
-  bottom: 12px;
-  right: 16px;
+  bottom: 20px;
+  right: 24px;
   z-index: 9999;
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.3);
-  letter-spacing: 1px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #f0e6d3;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  letter-spacing: 2px;
   pointer-events: none;
   font-family: 'Outfit', 'Noto Serif SC', sans-serif;
 }
