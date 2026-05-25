@@ -605,6 +605,20 @@ body {
   }
 }
 
+/* Credit signature - bottom right on all pages */
+#credit-signature {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  z-index: 9999;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 1px;
+  pointer-events: none;
+  font-family: 'Outfit', 'Noto Serif SC', sans-serif;
+}
+
 @keyframes bounceBadge {
   0%, 100% {
     transform: translateY(0);
